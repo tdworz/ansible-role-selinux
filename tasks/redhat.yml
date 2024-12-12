@@ -1,0 +1,32 @@
+---
+
+- name: Install prerequisites
+  ansible.builtin.dnf:
+    name:
+      - python3-dnf
+      - policycoreutils-python-utils
+    state: present
+  become: true
+
+- name: Install SELinux packages
+  ansible.builtin.dnf:
+    name:
+      - selinux-policy-targeted
+      - policycoreutils
+    state: present
+  become: true
+
+- name: Ensure SELinux is enabled in the SELinux configuration file
+  ansible.builtin.replace:
+    path: /etc/selinux/config
+    regexp: '^SELINUX=.*'
+    replace: 'SELINUX=enforcing'
+  become: true
+  register: selinux_config
+
+- name: Reboot the system if SELinux was changed to enforcing
+  ansible.builtin.reboot:
+    msg: "Rebooting to apply SELinux enforcing mode"
+    reboot_timeout: 300
+  become: true
+  when: selinux_config.changed
